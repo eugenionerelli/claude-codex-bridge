@@ -37,7 +37,7 @@ class BridgeCliTests(unittest.TestCase):
         command: list[str],
         *,
         input_text: str | None = None,
-        expected: int = 0,
+        expected: int | None = 0,
         env: dict[str, str] | None = None,
         cwd: Path | None = None,
     ):
@@ -51,18 +51,21 @@ class BridgeCliTests(unittest.TestCase):
             env=env,
             cwd=cwd,
         )
-        self.assertEqual(
-            result.returncode,
-            expected,
-            msg=f"command={command}\nstdout={result.stdout}\nstderr={result.stderr}",
-        )
+        # `expected=None` accetta qualunque codice di uscita: serve ai casi in cui
+        # il risultato da verificare è il rapporto emesso, non l'esito del processo.
+        if expected is not None:
+            self.assertEqual(
+                result.returncode,
+                expected,
+                msg=f"command={command}\nstdout={result.stdout}\nstderr={result.stderr}",
+            )
         return result
 
     def cli(
         self,
         *arguments: str,
         input_text: str | None = None,
-        expected: int = 0,
+        expected: int | None = 0,
         env: dict[str, str] | None = None,
         cwd: Path | None = None,
     ):
@@ -627,7 +630,24 @@ raise SystemExit(0)
         codex_hooks = (self.project / ".codex/hooks.json").read_text(encoding="utf-8")
         self.assertIn(str(self.project.resolve()), codex_hooks)
         self.assertNotIn(str(old_resolved), codex_hooks)
-        self.cli("doctor", "--project", str(self.project))
+
+        # `doctor` esce non-zero quando manca una delle due CLI vendor, che su
+        # una macchina di integrazione continua è la norma. Quello che il rebind
+        # deve garantire è l'identità del progetto e l'assenza di problemi
+        # diversi dalle CLI mancanti: legare il test al codice di uscita lo
+        # renderebbe verde solo sulla macchina di chi ha già entrambi gli agenti.
+        report = json.loads(
+            self.cli(
+                "doctor", "--project", str(self.project), expected=None
+            ).stdout
+        )
+        self.assertEqual(report["project"], str(self.project.resolve()))
+        unrelated = [
+            issue
+            for issue in report["issues"]
+            if "non trovato" not in issue.get("message", "")
+        ]
+        self.assertEqual(unrelated, [], msg=f"doctor report={report}")
 
     def test_live_doctor_is_json_and_handles_missing_upstream(self) -> None:
         self.cli("install", str(self.project))
