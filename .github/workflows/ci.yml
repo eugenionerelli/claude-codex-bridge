@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: ${{ matrix.os }} / Python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+        python-version:
+          - "3.10"
+          - "3.14"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Run unit tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Compile Python entry points
+        run: >-
+          python -m py_compile
+          skills/switch-agent/scripts/bridge.py
+          skills/switch-agent/scripts/transcode.py
+
+      - name: Check shell syntax
+        run: sh -n bin/agent-switch
+
+      - name: Check drift verifier CLI without consuming quota
+        run: python tools/verify-drift.py --help
+
+      - name: Validate Codex skill when a portable validator is available
+        shell: bash
+        run: |
+          validator="${CODEX_SKILL_VALIDATOR:-}"
+          if [[ -z "$validator" ]] && command -v quick_validate.py >/dev/null 2>&1; then
+            validator="$(command -v quick_validate.py)"
+          fi
+
+          if [[ -n "$validator" && -f "$validator" ]]; then
+            python "$validator" skills/switch-agent
+          else
+            echo "::notice::Codex skill validator not available; optional check skipped."
+          fi

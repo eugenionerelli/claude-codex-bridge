@@ -1,0 +1,4 @@
+interface:
+  display_name: "Switch Agent"
+  short_description: "Continuità nativa tra Claude e Codex"
+  default_prompt: "Usa $switch-agent per trasferire questa chat all’altro agente in una sessione nativa, mantenendo progetto, transcript e prossima azione."
