@@ -140,7 +140,7 @@ Clone the repository, then install it into each project where you want native
 switching:
 
 ```bash
-git clone https://github.com/eugenionerelli/claude-codex-bridge.git
+git clone https://github.com/nerln/claude-codex-bridge.git
 cd claude-codex-bridge
 ./bin/agent-switch install --hooks "/path/to/project"
 ```
