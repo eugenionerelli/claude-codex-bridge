@@ -29,7 +29,7 @@ Il comando Codex `/import` è presente almeno dal tag
 [`rust-v0.140.0`](https://github.com/openai/codex/blob/rust-v0.140.0/codex-rs/tui/src/slash_command.rs)
 e usa l'infrastruttura di migrazione degli agenti esterni. I valori 50 e 30
 giorni nel codice corrente sono default per la scoperta delle sessioni candidate
-([modello](https://github.com/openai/codex/blob/main/codex-rs/external-agent-migration/src/model.rs),
+([modello](https://github.com/openai/codex/blob/main/codex-rs/external-agent-migration/src/model.rs)
 [discovery](https://github.com/openai/codex/blob/main/codex-rs/external-agent-migration/src/detect/sessions/common.rs));
 non sono un limite di 50 elementi del transcript.
 
@@ -54,7 +54,7 @@ Persistenza/ripresa delle pair e relay live sono funzionalità sostanziali, ma
 non costituiscono transcodifica del transcript storico.
 
 [`ccl`](https://github.com/luongnv89/ccl) importa e redige transcript nel
-proprio store, quindi li inietta in un'esecuzione one-shot `-p`. Relay MCP,
+proprio store, quindi li inietta in un'esecuzione one-shot `-p`. Relay MCP
 handoff Markdown e altri one-shot possono trasferire contesto utile senza
 creare una nuova sessione nativa interattiva e resumable. Sono modelli
 operativi diversi, non versioni «irrilevanti» dello stesso problema.
@@ -69,15 +69,15 @@ La matrice confronta i progetti più vicini per modello operativo. `—` signifi
 | Nuova sessione nativa Claude ↔ Codex | Sì | Sì | Sì | Implementata; compatibilità corrente non verificata | No: collega due sessioni vive |
 | Oltre la coppia Claude/Codex | No | 17 adapter / 15 writer nell'audit | Sei store | Architettura ad adapter | No |
 | Verifica dopo scrittura | Verifica identità/prefisso e collisioni | Read-back strutturale con rollback/backup | Pubblicazione atomica documentata | Comando `smoke` | n/a |
-| Redazione prima del trasferimento | Sì, best-effort | — | Sì | — | n/a |
-| Stato persistente per chat/pair | Lane, session ID e lineage content-addressed | — | Indice delle sessioni | Pairing | Pair nominate e resume |
-| Capsule Git/filesystem e controllo drift | Sì | — | — | — | — |
-| Watch o collaborazione live | Via integrazione AgentBridge opzionale | — | Conversione interattiva in TUI | Watch/sync e hook | Relay live |
+| Redazione prima del trasferimento | Sì, best-effort |, | Sì |, | n/a |
+| Stato persistente per chat/pair | Lane, session ID e lineage content-addressed |, | Indice delle sessioni | Pairing | Pair nominate e resume |
+| Capsule Git/filesystem e controllo drift | Sì |, |, |, |, |
+| Watch o collaborazione live | Via integrazione AgentBridge opzionale |, | Conversione interattiva in TUI | Watch/sync e hook | Relay live |
 
 La scelta progettuale qui è quindi un bundle ristretto alla coppia
-Claude/Codex: transcodifica nativa, capsule operativa verificata, redazione,
+Claude/Codex: transcodifica nativa, capsule operativa verificata, redazione
 lane multi-chat, lineage/idempotenza e apertura diretta. Singole capacità e
-combinazioni parziali esistono altrove; la matrice descrive l'integrazione,
+combinazioni parziali esistono altrove; la matrice descrive l'integrazione
 senza rivendicare unicità assoluta.
 
 ## Dettagli di formato: fonti e osservazioni

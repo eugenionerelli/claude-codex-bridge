@@ -9,7 +9,7 @@ destination directly. The source session is never rewritten.
 The result is a real `claude --resume <id>` or Codex thread, not a prompt that
 asks the next model to reconstruct the work from a summary. On macOS, Codex is
 opened with `codex://threads/<id>` and Claude in a resumed Terminal session; no
-prefilled prompt and no extra Enter are required on the primary path.
+prefilled prompt and no extra Enter are required on the normal path.
 
 > Native session transcoding is experimental. Claude Code and Codex do not
 > publish these on-disk schemas as a cross-vendor API. The implementation is
@@ -102,7 +102,7 @@ Transcript modes are explicit:
   capsule.
 
 Tool calls default to `--tools compact --tool-chars 600`. Use `drop` for the
-smallest and most private transfer, or `full` when tool outputs are essential.
+smallest and most private transfer, or `full` when you need the tool outputs.
 All modes still honor `--max-chars` (120,000 by default), which preserves the
 head and tail and inserts an explicit omission marker when needed.
 
@@ -228,7 +228,7 @@ is retained because it is small enough to audit together with the workflow
 layer and is verified against the exact installed CLI builds. Delegating to a
 second engine today would add another version and supply-chain boundary while
 the closest dedicated alternative is pinned to older builds. A future external
-adapter remains possible, but is not on the critical path.
+adapter remains possible, but is not on the path that has to work.
 
 `tools/verify-drift.py` is the compatibility canary: it mints unpredictable
 markers, creates a real Claude session, performs the native round trip, asks
@@ -236,7 +236,7 @@ both agents to list the markers back without reading any file, and exits
 non-zero on loss. The no-reading restriction is given as an instruction in the
 prompt. It is not enforced by a sandbox: Codex runs under `--sandbox read-only`,
 which still permits reads, and Claude runs with no tool restriction. A marker
-that comes back therefore shows the round trip carried it into context, on the
+that comes back shows the round trip carried it into context, on the
 assumption that the agent followed the instruction. Run it after either CLI
 changes:
 
@@ -245,7 +245,7 @@ python3 tools/verify-drift.py --json
 ```
 
 The probe consumes two Claude calls and one Codex call, then removes only the
-probe sessions it created. It is therefore a mandatory release/upgrade gate,
+probe sessions it created. It is a mandatory release/upgrade gate,
 not a per-commit test. The `Vendor format drift` workflow supports manual and
 weekly runs on a private macOS runner authenticated to both CLIs; standard CI
 only validates its non-networked command surface and never consumes quota.
