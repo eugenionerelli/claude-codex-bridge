@@ -16,11 +16,17 @@ prefilled prompt and no extra Enter are required on the primary path.
 > empirically tested, structurally validated, and version-gated rather than
 > assumed stable.
 
-Verified end to end on macOS on 2026-08-01 with Claude Code `2.1.220` and
-Codex `0.146.0-alpha.9.2`: Claude → Codex → Claude preserved facts introduced
-on both sides; the Codex rollout became visible from the deep link alone,
-without a bootstrap turn, and both target files remained `0600` after native
-resume. Hermetic tests use isolated vendor homes and never touch real chats.
+Verified end to end on macOS on 2026-08-01 across Claude Code `2.1.219`, which
+wrote the source transcripts, and `2.1.220`, which resumed the transferred
+session, with Codex `0.146.0-alpha.9.2`: Claude → Codex → Claude preserved
+facts introduced on both sides; the Codex rollout became visible from the deep
+link alone, without a bootstrap turn, and both files this tool wrote were still
+`0600` after native resume. The `0600` applies to what the bridge writes. When
+Codex itself resumes one of those targets it forks a new rollout under its own
+umask, which on macOS is world readable, and that fork holds the same
+transferred conversation. Treat the target directory, not just the target file,
+as the thing to protect. Hermetic tests use isolated vendor homes and never
+touch real chats.
 An additional 8.1 MB real-world transcript round trip retained facts buried in
 the middle while reducing the visible transfer to about 64,000 characters.
 
@@ -226,8 +232,13 @@ adapter remains possible, but is not on the critical path.
 
 `tools/verify-drift.py` is the compatibility canary: it mints unpredictable
 markers, creates a real Claude session, performs the native round trip, asks
-both agents to recall the markers without file access, and exits non-zero on
-loss. Run it after either CLI changes:
+both agents to list the markers back without reading any file, and exits
+non-zero on loss. The no-reading restriction is given as an instruction in the
+prompt. It is not enforced by a sandbox: Codex runs under `--sandbox read-only`,
+which still permits reads, and Claude runs with no tool restriction. A marker
+that comes back therefore shows the round trip carried it into context, on the
+assumption that the agent followed the instruction. Run it after either CLI
+changes:
 
 ```bash
 python3 tools/verify-drift.py --json

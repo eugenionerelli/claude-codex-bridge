@@ -6,7 +6,7 @@ chat stessa, riscritta nel formato di sessione nativo dell'altro agente, così c
 `claude --resume <id>` o `codex resume <id>` la riprendano con la conversazione
 davvero in contesto.
 
-Formati (verificati su Claude Code 2.1.207 e Codex CLI 0.146.0-alpha.9.2):
+Formati (verificati su Claude Code 2.1.219 e 2.1.220, Codex CLI 0.146.0-alpha.9.2):
 
   Claude Code  ~/.claude/projects/<enc(cwd)>/<uuid4>.jsonl
                righe {"type":"user"|"assistant", parentUuid, uuid, timestamp,
@@ -54,7 +54,7 @@ TRANSCODE_VERSION = "0.2.0"
 CLAUDE_HOME = Path(os.environ.get("CLAUDE_CONFIG_DIR") or (Path.home() / ".claude"))
 CODEX_HOME = Path(os.environ.get("CODEX_HOME") or (Path.home() / ".codex"))
 
-CLAUDE_VERSION_FALLBACK = "2.1.207"
+CLAUDE_VERSION_FALLBACK = "2.1.220"
 CODEX_VERSION_FALLBACK = "0.146.0-alpha.9.2"
 SUPPORTED_CLAUDE_VERSION_PREFIXES = ("2.1.",)
 SUPPORTED_CODEX_VERSION_PREFIXES = ("0.146.",)
