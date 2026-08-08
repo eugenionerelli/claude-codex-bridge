@@ -57,7 +57,10 @@ CODEX_HOME = Path(os.environ.get("CODEX_HOME") or (Path.home() / ".codex"))
 CLAUDE_VERSION_FALLBACK = "2.1.220"
 CODEX_VERSION_FALLBACK = "0.146.0-alpha.9.2"
 SUPPORTED_CLAUDE_VERSION_PREFIXES = ("2.1.",)
-SUPPORTED_CODEX_VERSION_PREFIXES = ("0.146.",)
+# 0.147 aggiunta l'8 agosto 2026 dopo un round trip verde misurato con
+# `tools/verify-drift.py --allow-unsupported-version`: la struttura del rollout
+# è invariata. Allargare questo elenco senza quella prova vanifica il cancello.
+SUPPORTED_CODEX_VERSION_PREFIXES = ("0.146.", "0.147.")
 
 # Il binario Codex non è nel PATH quando si usa solo l'app desktop.
 CODEX_BUNDLED = Path("/Applications/ChatGPT.app/Contents/Resources/codex")
@@ -1066,6 +1069,7 @@ def write_claude(
     *,
     session_id: str | None = None,
     target_path: Path | None = None,
+    allow_unsupported_version: bool = False,
 ) -> tuple[str, Path]:
     directory = claude_project_dir(transcript.cwd)
     session_id = validate_session_id(
@@ -1081,7 +1085,8 @@ def write_claude(
         verify_existing_target("claude", path, transcript, messages)
         return session_id, path
     version = detect_version(claude_executable(), CLAUDE_VERSION_FALLBACK)
-    require_supported_version("claude", version)
+    if not allow_unsupported_version:
+        require_supported_version("claude", version)
     base_time = dt.datetime.now(dt.timezone.utc)
 
     rows: list[dict[str, Any]] = []
@@ -1250,6 +1255,7 @@ def write_codex(
     *,
     session_id: str | None = None,
     target_path: Path | None = None,
+    allow_unsupported_version: bool = False,
 ) -> tuple[str, Path]:
     now_utc = dt.datetime.now(dt.timezone.utc)
     now_local = dt.datetime.now()
@@ -1264,7 +1270,8 @@ def write_codex(
         verify_existing_target("codex", existing, transcript, messages)
         return session_id, existing
     version = detect_version(codex_executable(), CODEX_VERSION_FALLBACK)
-    require_supported_version("codex", version)
+    if not allow_unsupported_version:
+        require_supported_version("codex", version)
 
     rows: list[dict[str, Any]] = [{
         "timestamp": stamp_from(now_utc),
@@ -1460,12 +1467,18 @@ def cmd_switch(args: argparse.Namespace) -> int:
         return 0
 
     if args.target == "claude":
-        session_id, path = write_claude(transcript, messages)
+        session_id, path = write_claude(
+            transcript, messages,
+            allow_unsupported_version=args.allow_unsupported_version,
+        )
         open_command = ["claude", "--resume", session_id]
         open_hint = f"cd -- {shlex.quote(project)} && {shlex.join(open_command)}"
         deep_link = None
     else:
-        session_id, path = write_codex(transcript, messages)
+        session_id, path = write_codex(
+            transcript, messages,
+            allow_unsupported_version=args.allow_unsupported_version,
+        )
         executable = codex_executable() or "codex"
         open_command = [executable, "resume", session_id]
         open_hint = f"cd -- {shlex.quote(project)} && {shlex.join(open_command)}"

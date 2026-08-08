@@ -152,13 +152,25 @@ def salient(stderr: str | None, stdout: str | None, limit: int = 300) -> str:
     return " | ".join(reversed(seen))[:limit]
 
 
-def transcode(source: str, target: str, project: str, session: str | None) -> dict:
+def transcode(
+    source: str,
+    target: str,
+    project: str,
+    session: str | None,
+    *,
+    allow_unsupported: bool = False,
+) -> dict:
     cmd = [
         sys.executable, str(TRANSCODE), "switch",
         "--from", source, "--to", target, "--project", project,
     ]
     if session:
         cmd += ["--session", session]
+    if allow_unsupported:
+        # Il caso per cui esiste questo strumento: è uscita una versione nuova
+        # delle CLI e va deciso se il cancello si può allargare. Senza questo,
+        # il cancello blocca la prova che servirebbe proprio ad aggiornarlo.
+        cmd += ["--allow-unsupported-version"]
     out = run(cmd, project, f"transcode {source}->{target}")
     try:
         return json.loads(out)
@@ -252,6 +264,11 @@ def main() -> int:
         action="store_true",
         help="Conserva progetto e sessioni probe per l'ispezione.",
     )
+    parser.add_argument(
+        "--allow-unsupported-version",
+        action="store_true",
+        help="Prova comunque una versione di CLI fuori dal cancello, per decidere se allargarlo.",
+    )
     args = parser.parse_args()
 
     started = time.time()
@@ -286,7 +303,10 @@ def main() -> int:
         report["steps"].append({"step": "seed-claude", "session": claude_session, "ok": True})
 
         if args.direction in ("round-trip", "claude-to-codex"):
-            forward = transcode("claude", "codex", project, claude_session)
+            forward = transcode(
+                "claude", "codex", project, claude_session,
+                allow_unsupported=args.allow_unsupported_version,
+            )
             codex_session = forward["target_session_id"]
             codex_probe_ids.append(codex_session)
             answer = ask_codex(codex, project, codex_session)
@@ -308,11 +328,17 @@ def main() -> int:
 
         if args.direction in ("round-trip", "codex-to-claude"):
             if codex_session is None:
-                codex_session = transcode("claude", "codex", project, claude_session)[
+                codex_session = transcode(
+                    "claude", "codex", project, claude_session,
+                    allow_unsupported=args.allow_unsupported_version,
+                )[
                     "target_session_id"
                 ]
                 codex_probe_ids.append(codex_session)
-            back = transcode("codex", "claude", project, codex_session)
+            back = transcode(
+                "codex", "claude", project, codex_session,
+                allow_unsupported=args.allow_unsupported_version,
+            )
             new_claude_session = back["target_session_id"]
             claude_probe_paths.append(Path(back["target_file"]))
             answer = ask_claude(claude, project, new_claude_session)
